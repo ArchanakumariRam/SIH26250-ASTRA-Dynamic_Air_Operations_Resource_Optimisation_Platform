@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASTRA-C2 // Dynamic Air Operations & Resource Optimisation Platform</title>
+  <meta name="description" content="AI-enabled dynamic air operations decision support, multi-source tactical data fusion, and weapon-target resource optimization command console.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="tactical-hud-theme">
+
+  <!-- TOP MILITARY CLASSIFICATION BANNER -->
+  <aside class="classification-banner" id="classificationBanner">
+    <div class="banner-left">
+      <span class="sec-badge"><i class="fa-solid fa-shield-halved"></i> SECRET // NOFORN</span>
+      <span class="unit-tag">AIR HEADQUARTERS (VAYU BHAWAN) • WESTERN AIR COMMAND (WAC)</span>
+    </div>
+    <div class="banner-center">
+      <span class="op-name"><i class="fa-solid fa-crosshairs"></i> OP TRISHUL-VAJRA • DEFCON 2 (AIR DEFENCE RED)</span>
+    </div>
+    <div class="banner-right">
+      <span class="datalink-status"><i class="fa-solid fa-satellite-dish pulse-icon"></i> LINK-16 / IACCS SYNC: LIVE (99.8%)</span>
+      <button class="audio-toggle-btn" id="audioToggleBtn" title="Toggle Tactical Audio Feedback">
+        <i class="fa-solid fa-volume-high" id="audioIcon"></i> <span id="audioLabel">AUDIO FX ON</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN APP CONTAINER -->
+  <div class="app-layout">
+
+    <!-- PRIMARY HEADER -->
+    <header class="tactical-header">
+      <div class="header-brand">
+        <div class="logo-crest">
+          <i class="fa-solid fa-jet-fighter-up brand-icon"></i>
+          <div class="crest-lines"></div>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">
+            <span class="title-highlight">ASTRA</span>-C2
+            <span class="version-tag">v4.2-PROD</span>
+          </div>
+          <div class="brand-subtitle">DYNAMIC AIR OPERATIONS & RESOURCE OPTIMISATION ENGINE</div>
+        </div>
+      </div>
+
+      <!-- MISSION TELEMETRY BAR -->
+      <div class="telemetry-bar">
+        <div class="telemetry-item">
+          <span class="telemetry-label">ZULU (UTC)</span>
+          <span class="telemetry-val" id="zuluClock">12:00:00Z</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">LOCAL (IST)</span>
+          <span class="telemetry-val" id="istClock">17:30:00</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">MET (MISSION TIME)</span>
+          <span class="telemetry-val highlight-cyan" id="metTimer">T+03:42:19</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">AIR THREAT LEVEL</span>
+          <span class="telemetry-val threat-high" id="threatBadge"><i class="fa-solid fa-triangle-exclamation"></i> HIGH (SECTOR 4)</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">EW/GPS STATUS</span>
+          <span class="telemetry-val secure-green"><i class="fa-solid fa-lock"></i> ANTI-JAM M-CODE</span>
+        </div>
+      </div>
+
+      <!-- HEADER ACTIONS -->
+      <div class="header-actions">
+        <button class="btn-tactical btn-alert" id="triggerContingencyBtn" title="Inject Real-time Contingency Scenario">
+          <i class="fa-solid fa-bell fa-shake"></i> INJECT CONTINGENCY
+        </button>
+        <button class="btn-tactical btn-primary" id="runOptimizerBtn" title="Execute AI Weapon-Target Assignment & Flight Optimization">
+          <i class="fa-solid fa-microchip"></i> RUN AI OPTIMIZER
+        </button>
+      </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="tactical-nav">
+      <div class="nav-tabs">
+        <button class="nav-tab active" data-view="copView" id="navCop">
+          <i class="fa-solid fa-map-location-dot"></i>
+          <span>TACTICAL AIR PICTURE (COP)</span>
+          <span class="badge-count" id="activeSortieBadge">8 SORTIES</span>
+        </button>
+        <button class="nav-tab" data-view="retaskView" id="navRetask">
+          <i class="fa-solid fa-arrows-split-up-and-left"></i>
+          <span>DYNAMIC RETASKING & WTA</span>
+          <span class="badge-alert" id="pendingRetaskBadge">1 ALERT</span>
+        </button>
+        <button class="nav-tab" data-view="fleetView" id="navFleet">
+          <i class="fa-solid fa-plane-tail"></i>
+          <span>FLEET & SQUADRON READINESS</span>
+          <span class="badge-sub">4 SQUADRONS</span>
+        </button>
+        <button class="nav-tab" data-view="deconflictView" id="navDeconflict">
+          <i class="fa-solid fa-cubes-stacked"></i>
+          <span>4D AIRSPACE DECONFLICTION</span>
+          <span class="badge-status status-ok">DECONFLICTED</span>
+        </button>
+        <button class="nav-tab" data-view="atoView" id="navAto">
+          <i class="fa-solid fa-list-check"></i>
+          <span>ATO SORTIE BOARD</span>
+          <span class="badge-sub">DAY-1 CYCLE</span>
+        </button>
+        <button class="nav-tab" data-view="simView" id="navSim">
+          <i class="fa-solid fa-vr-cardboard"></i>
+          <span>"WHAT-IF" WARGAMING</span>
+          <span class="badge-sub">SANDBOX</span>
+        </button>
+      </div>
+      <div class="nav-telemetry-pill">
+        <span class="dot-live"></span> AI RECOVERY ENGINE: ONLINE
+      </div>
+    </nav>
+
+    <!-- MAIN WORKSPACE CONTENT -->
+    <main class="main-content">
+
+      <!-- ============================================== -->
+      <!-- VIEW 1: TACTICAL AIR PICTURE (COP - MAP)       -->
+      <!-- ============================================== -->
+      <section class="view-panel active-panel" id="copView">
+        <div class="cop-grid-layout">
+
+          <!-- LEFT SIDEBAR: ACTIVE TRACKS & COMBAT AIR PATROLS -->
+          <aside class="cop-sidebar">
+            <div class="sidebar-header">
+              <div class="sidebar-title">
+                <i class="fa-solid fa-radar"></i> COMBAT SORTIES & ASSETS
+              </div>
+              <span class="sidebar-counter" id="activeAssetsCount">5 AIR / 2 AWACS / 1 TANKER</span>
+            </div>
+
+            <div class="tactical-search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="trackSearchInput" placeholder="Filter callsign, type, sector..." autocomplete="off">
+            </div>
+
+            <!-- ASSET LIST -->
+            <div class="asset-list-container" id="copAssetList">
+              <!-- Rendered dynamically by app.js -->
+            </div>
+
+            <!-- SAM & THREAT MATRIX MINI-SUMMARY -->
+            <div class="threat-summary-card">
+              <div class="card-mini-head">
+                <span><i class="fa-solid fa-radiation"></i> ACTIVE AD THREAT DOMES</span>
+                <span class="text-danger" id="samCountText">3 DETECTED</span>
+              </div>
+              <div class="threat-item-compact">
+                <span class="threat-dot red"></span>
+                <span class="threat-name">HQ-9B LONG RANGE (SECTOR N-4)</span>
+                <span class="threat-range">WEZ: 250km</span>
+              </div>
+              <div class="threat-item-compact">
+                <span class="threat-dot orange"></span>
+                <span class="threat-name">LY-80 MED RANGE (FORWARD RIDGE)</span>
+                <span class="threat-range">WEZ: 70km</span>
+              </div>
+              <div class="threat-item-compact">
+                <span class="threat-dot yellow"></span>
+                <span class="threat-name">PANTSIR-S1 CLOSE DEFENSE</span>
+                <span class="threat-range">WEZ: 20km</span>
+              </div>
+            </div>
+          </aside>
+
+          <!-- CENTER: INTERACTIVE TACTICAL MAP CONTAINER -->
+          <div class="map-wrapper">
+            <div id="tacticalMap" class="tactical-map"></div>
+
+            <!-- RADAR SWEEP ANIMATION OVERLAY -->
+            <div class="radar-scan-overlay" id="radarOverlay">
+              <div class="radar-sweep-beam"></div>
+              <div class="radar-grid-rings"></div>
+            </div>
+
+            <!-- MAP HUD CORNER BRACKETS & METRICS OVERLAY -->
+            <div class="map-hud-overlay">
+              <div class="hud-corner top-left">
+                <span class="hud-label">AIRSPACE SECTOR:</span>
+                <span class="hud-val">NORTHERN THEATRE (LEH - SRINAGAR - AMBALA AXIS)</span>
+                <div class="hud-sub">COORD: 32°44'N 76°12'E | GRID: NV-882</div>
+              </div>
+              <div class="hud-corner top-right">
+                <div class="map-layer-toggles">
+                  <div class="basemap-group">
+                    <button class="layer-pill active" id="basemapDark" title="Esri Tactical Dark Vector">
+                      <i class="fa-solid fa-moon"></i> TACTICAL DARK
+                    </button>
+                    <button class="layer-pill" id="basemapSat" title="Esri High-Resolution Satellite Recon">
+                      <i class="fa-solid fa-satellite"></i> SATELLITE
+                    </button>
+                  </div>
+                  <button class="layer-pill active" id="toggleAirbases" title="Toggle Forward Airbases">
+                    <i class="fa-solid fa-plane-departure"></i> AIRBASES
+                  </button>
+                  <button class="layer-pill active" id="toggleSamRings" title="Toggle SAM Threat Domes">
+                    <i class="fa-solid fa-circle-dot"></i> SAM WEZ
+                  </button>
+                  <button class="layer-pill active" id="toggleCorridors" title="Toggle Safe Flight Corridors">
+                    <i class="fa-solid fa-road"></i> CORRIDORS
+                  </button>
+                  <button class="layer-pill active" id="toggleAwacs" title="Toggle AWACS Coverage Dome">
+                    <i class="fa-solid fa-satellite-dish"></i> AWACS NET
+                  </button>
+                  <button class="layer-pill" id="toggleRadarSweep" title="Toggle Animated Radar Sweep">
+                    <i class="fa-solid fa-compact-disc"></i> SWEEP
+                  </button>
+                </div>
+              </div>
+              <div class="hud-corner bottom-left">
+                <div class="tactical-legend">
+                  <span class="leg-item"><span class="leg-box blue"></span> BLUEFOR (FRIENDLY)</span>
+                  <span class="leg-item"><span class="leg-box red"></span> OPFOR / BOGEY</span>
+                  <span class="leg-item"><span class="leg-box purple"></span> AWACS / AEW&C</span>
+                  <span class="leg-item"><span class="leg-box amber"></span> TANKER / REFUEL</span>
+                  <span class="leg-item"><span class="leg-box red-ring"></span> SAM KILL-ZONE</span>
+                  <span class="leg-item"><span class="leg-box dashed-cyan"></span> SAFE CORRIDOR</span>
+                </div>
+              </div>
+              <div class="hud-corner bottom-right">
+                <button class="btn-hud-control" id="resetMapCenterBtn" title="Center map on tactical theatre">
+                  <i class="fa-solid fa-crosshairs"></i> RECENTER THEATRE
+                </button>
+              </div>
+            </div>
+
+            <!-- FLOATING ASSET TELEMETRY HUD (WHEN CLICKED) -->
+            <div class="asset-telemetry-hud hidden" id="assetTelemetryHud">
+              <div class="telemetry-hud-header">
+                <div>
+                  <span class="hud-callsign" id="hudCallsign">TIGER-01</span>
+                  <span class="hud-type" id="hudType">RAFALE F3-R</span>
+                </div>
+                <button class="hud-close-btn" id="closeHudBtn"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <div class="telemetry-hud-body">
+                <div class="hud-metric">
+                  <span class="hud-lbl">PILOT</span>
+                  <span class="hud-data" id="hudPilot">WG CDR V. SHARMA</span>
+                </div>
+                <div class="hud-metric">
+                  <span class="hud-lbl">ALTITUDE</span>
+                  <span class="hud-data highlight-cyan" id="hudAlt">FL320 (32,000 FT)</span>
+                </div>
+                <div class="hud-metric">
+                  <span class="hud-lbl">AIRSPEED</span>
+                  <span class="hud-data" id="hudSpeed">MACH 1.15 (740 KTS)</span>
+                </div>
+                <div class="hud-metric">
+                  <span class="hud-lbl">FUEL REMAINING</span>
+                  <span class="hud-data secure-green" id="hudFuel">74% (BINGO: 22%)</span>
+                </div>
+                <div class="hud-metric">
+                  <span class="hud-lbl">LOADOUT</span>
+                  <span class="hud-data" id="hudLoadout">2x METEOR, 2x MICA-IR, 2x SCALP</span>
+                </div>
+                <div class="hud-metric">
+                  <span class="hud-lbl">CURRENT TASK</span>
+                  <span class="hud-data text-warning" id="hudMission">COMBAT AIR PATROL - SECTOR 2</span>
+                </div>
+              </div>
+              <div class="telemetry-hud-footer">
+                <button class="btn-tactical btn-small btn-primary" id="hudRetaskBtn">
+                  <i class="fa-solid fa-arrows-split-up-and-left"></i> INITIATE RETASK
+                </button>
+                <button class="btn-tactical btn-small btn-secondary" id="hudRouteOptBtn">
+                  <i class="fa-solid fa-route"></i> OPTIMIZE ROUTE
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT SIDEBAR: REAL-TIME C2 EVENT STREAM & THREAT AUDIT -->
+          <aside class="cop-events-sidebar">
+            <div class="sidebar-header">
+              <div class="sidebar-title">
+                <i class="fa-solid fa-satellite-dish"></i> TACTICAL DATALINK FEED
+              </div>
+              <span class="dot-live"></span>
+            </div>
+
+            <!-- LIVE C2 LOG STREAM -->
+            <div class="c2-event-stream" id="c2EventStream">
+              <!-- Event items populated dynamically -->
+            </div>
+
+            <!-- MISSION STATS WIDGET -->
+            <div class="cop-stats-card">
+              <div class="stat-mini-row">
+                <span class="stat-lbl">AIR DEFENCE READINESS</span>
+                <span class="stat-val secure-green">98.4%</span>
+              </div>
+              <div class="stat-progress-bar">
+                <div class="progress-fill fill-green" style="width: 98.4%"></div>
+              </div>
+
+              <div class="stat-mini-row">
+                <span class="stat-lbl">OPTIMIZATION CONVERGENCE</span>
+                <span class="stat-val highlight-cyan">0.24s (MILP)</span>
+              </div>
+              <div class="stat-progress-bar">
+                <div class="progress-fill fill-cyan" style="width: 92%"></div>
+              </div>
+
+              <div class="stat-mini-row">
+                <span class="stat-lbl">BINGO FUEL SAFETY MARGIN</span>
+                <span class="stat-val text-warning">+48 MINS LOITER</span>
+              </div>
+              <div class="stat-progress-bar">
+                <div class="progress-fill fill-warning" style="width: 76%"></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 2: DYNAMIC RETASKING & WTA ENGINE         -->
+      <!-- ============================================== -->
+      <section class="view-panel" id="retaskView">
+        <div class="retask-grid-container">
+
+          <!-- ACTIVE CONTINGENCY / THREAT BANNER -->
+          <div class="contingency-status-banner" id="contingencyBanner">
+            <div class="contingency-badge">
+              <i class="fa-solid fa-triangle-exclamation pulse-icon"></i>
+              <span>CRITICAL TACTICAL CONTINGENCY</span>
+            </div>
+            <div class="contingency-details">
+              <h3 id="contingencyTitle">HIGH-VALUE TARGET POP-UP: ENEMY RADAR / TEL CONVOY (HVT-ALPHA)</h3>
+              <p id="contingencyDesc">
+                AWACS Netra detected hostile mobile air defense TEL unit and radar emitter moving into firing position at Sector 4 (Grid NV-9104). Immediate strike authorization required before camouflage canopy deployed.
+              </p>
+            </div>
+            <div class="contingency-metrics">
+              <div class="c-metric">
+                <span class="c-lbl">TIME SENSITIVITY</span>
+                <span class="c-val text-danger" id="contingencyTimer">04:42 REMAINING</span>
+              </div>
+              <div class="c-metric">
+                <span class="c-lbl">EST. THREAT LEVEL</span>
+                <span class="c-val text-danger">TIER-1 (CRITICAL)</span>
+              </div>
+              <div class="c-metric">
+                <span class="c-lbl">TARGET TYPE</span>
+                <span class="c-val highlight-cyan">SAM-TEL & RADAR EMITTER</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TWO COLUMN RETASKING WORKSPACE -->
+          <div class="retask-workspace-split">
+
+            <!-- LEFT: AI CANDIDATE EVALUATION MATRIX (WEAPON-TARGET ASSIGNMENT) -->
+            <div class="card-panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title"><i class="fa-solid fa-microchip"></i> AI MULTI-CRITERIA DECISION SUPPORT (MCDS)</div>
+                  <div class="panel-sub">Ranked airborne candidate sorties based on Fuel, Weapon Pk, SAM Evasion & Response Time</div>
+                </div>
+                <button class="btn-tactical btn-small btn-secondary" id="recomputeWtaBtn">
+                  <i class="fa-solid fa-arrows-rotate"></i> RE-SOLVE MILP
+                </button>
+              </div>
+
+              <div class="candidate-cards-list" id="candidateList">
+                <!-- Candidate cards generated dynamically -->
+              </div>
+            </div>
+
+            <!-- RIGHT: SELECTED RETASK FLIGHT PROFILE & COMPARISON -->
+            <div class="card-panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title"><i class="fa-solid fa-crosshairs"></i> RECOMMENDED RETASK SOLUTION & MISSION IMPACT</div>
+                  <div class="panel-sub">Optimal Weapon-Target Pairing with Dynamic Route Recalculation</div>
+                </div>
+                <span class="badge-status status-ok" id="recommendedBadge">AI OPTIMAL: 96.4% SCORE</span>
+              </div>
+
+              <!-- SELECTED SOLUTION CARD -->
+              <div class="retask-solution-details" id="retaskSolutionCard">
+                <!-- Rendered dynamically -->
+              </div>
+
+              <!-- ACTION CONFIRMATION BAR -->
+              <div class="retask-action-bar">
+                <div class="action-bar-info">
+                  <i class="fa-solid fa-shield-virus highlight-cyan"></i>
+                  <span>Dynamic Air Corridor Deconfliction verified. Intercept route clears SAM-WEZ by 18.5 km buffer.</span>
+                </div>
+                <div class="action-bar-buttons">
+                  <button class="btn-tactical btn-secondary" id="rejectRetaskBtn">
+                    <i class="fa-solid fa-xmark"></i> STAND DOWN / ABORT
+                  </button>
+                  <button class="btn-tactical btn-alert" id="authorizeRetaskBtn">
+                    <i class="fa-solid fa-paper-plane"></i> AUTHORIZE RETASK & DATALINK TRANSMIT
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 3: FLEET & SQUADRON READINESS MATRIX      -->
+      <!-- ============================================== -->
+      <section class="view-panel" id="fleetView">
+        <div class="fleet-dashboard-layout">
+
+          <!-- TOP SUMMARY KPI TILES -->
+          <div class="fleet-kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-icon-wrap"><i class="fa-solid fa-jet-fighter"></i></div>
+              <div class="kpi-content">
+                <span class="kpi-label">TOTAL COMBAT FLEET</span>
+                <span class="kpi-val" id="totalAircraftKpi">48 AIRCRAFT</span>
+                <span class="kpi-sub secure-green"><i class="fa-solid fa-circle-check"></i> 41 MISSION CAPABLE</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon-wrap cyan"><i class="fa-solid fa-wrench"></i></div>
+              <div class="kpi-content">
+                <span class="kpi-label">SERVICEABILITY RATE</span>
+                <span class="kpi-val highlight-cyan">85.4%</span>
+                <span class="kpi-sub">+4.2% above operational baseline</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon-wrap amber"><i class="fa-solid fa-clock-rotate-left"></i></div>
+              <div class="kpi-content">
+                <span class="kpi-label">AVG TURNAROUND TIME (TAT)</span>
+                <span class="kpi-val text-warning">32.6 MINS</span>
+                <span class="kpi-sub">Rapid re-arm & refuel standard</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon-wrap green"><i class="fa-solid fa-person-military-pointing"></i></div>
+              <div class="kpi-content">
+                <span class="kpi-label">PILOT G-READINESS</span>
+                <span class="kpi-val secure-green">91.8%</span>
+                <span class="kpi-sub">34 Pilots at Ready-1 Alert</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SQUADRON CARDS GRID -->
+          <div class="squadron-grid-container" id="squadronGrid">
+            <!-- Squadron cards rendered dynamically -->
+          </div>
+
+          <!-- MUNITIONS & WEAPONS DEPOT STATUS -->
+          <div class="card-panel weapons-panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title"><i class="fa-solid fa-cubes"></i> FORWARD AMMUNITION & WEAPON STOCKPILE (WESTERN SECTOR)</div>
+                <div class="panel-sub">Real-time pylon availability, BVR inventories, and precision standoff munitions</div>
+              </div>
+              <span class="badge-status status-ok">SUPPLY CHAIN: STABLE</span>
+            </div>
+            <div class="weapons-grid" id="weaponsGrid">
+              <!-- Munitions items -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 4: 4D AIRSPACE DECONFLICTION              -->
+      <!-- ============================================== -->
+      <section class="view-panel" id="deconflictView">
+        <div class="deconflict-layout">
+
+          <!-- TOP DECONFLICTION CONTROLS & STATUS -->
+          <div class="deconflict-header-bar">
+            <div class="deconflict-title-wrap">
+              <div class="panel-title"><i class="fa-solid fa-arrows-up-down-left-right"></i> 4D AIRSPACE PROFILE & SEPARATION MONITOR</div>
+              <div class="panel-sub">Dynamic lateral, vertical (Flight Level FL), and temporal deconfliction between strike packages, civil corridors, and friendly SAM batteries.</div>
+            </div>
+            <div class="deconflict-status-pill secure-green">
+              <i class="fa-solid fa-circle-check"></i> ALL CORRIDORS DECONFLICTED (0 CONFLICTS)
+            </div>
+          </div>
+
+          <!-- 4D PROFILE VISUALIZATION CANVAS / ALTITUDE LADDER -->
+          <div class="card-panel altitude-profiler-panel">
+            <div class="profiler-hud-header">
+              <span class="hud-label"><i class="fa-solid fa-chart-line"></i> 4D VERTICAL FLIGHT ENVELOPE (FLIGHT LEVEL FL000 TO FL500)</span>
+              <div class="profile-legend">
+                <span class="p-item"><span class="p-box cyan"></span> STRIKE / ESCORT PACKAGES</span>
+                <span class="p-item"><span class="p-box purple"></span> AWACS / AEW&C ORBIT (FL320)</span>
+                <span class="p-item"><span class="p-box amber"></span> TANKER REFUEL CORRIDOR (FL260)</span>
+                <span class="p-item"><span class="p-box red"></span> SAM THREAT ENVELOPE (CEILING FL450)</span>
+                <span class="p-item"><span class="p-box green"></span> TERRAIN MASKING / NOE (0 - 500 FT)</span>
+              </div>
+            </div>
+
+            <!-- INTERACTIVE ALTITUDE ENVELOPE CANVAS -->
+            <div class="canvas-container">
+              <canvas id="altitudeCanvas" width="1200" height="340"></canvas>
+            </div>
+          </div>
+
+          <!-- DECONFLICTION RULE AUDIT TABLE -->
+          <div class="card-panel">
+            <div class="panel-header">
+              <div class="panel-title"><i class="fa-solid fa-table-list"></i> AIRSPACE CORRIDOR RESERVATION & DECONFLICTION MATRIX</div>
+              <button class="btn-tactical btn-small btn-primary" id="autoDeconflictBtn">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AUTO-DECONFLICT ALL SORTIES
+              </button>
+            </div>
+            <div class="table-container">
+              <table class="tactical-table" id="deconflictTable">
+                <thead>
+                  <tr>
+                    <th>CORRIDOR / ROUTE</th>
+                    <th>ASSIGNED SORTIE</th>
+                    <th>ALTITUDE BLOCK</th>
+                    <th>LATERAL BUFFER</th>
+                    <th>TIME WINDOW</th>
+                    <th>SAM BUFFER</th>
+                    <th>DECONFLICTION STATUS</th>
+                  </tr>
+                </thead>
+                <tbody id="deconflictTableBody">
+                  <!-- Generated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 5: ATO SORTIE BOARD & TIMELINE            -->
+      <!-- ============================================== -->
+      <section class="view-panel" id="atoView">
+        <div class="ato-layout">
+
+          <div class="card-panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title"><i class="fa-solid fa-calendar-check"></i> AIR TASKING ORDER (ATO) • CYCLE TRISHUL-DAY-1</div>
+                <div class="panel-sub">Authoritative operational sortie schedule and real-time mission execution progress</div>
+              </div>
+              <div class="ato-filter-actions">
+                <select class="tactical-select" id="atoTypeFilter">
+                  <option value="ALL">ALL MISSION TYPES</option>
+                  <option value="CAP">COMBAT AIR PATROL (CAP)</option>
+                  <option value="STRIKE">DEEP PENETRATION STRIKE</option>
+                  <option value="SEAD">SEAD / DEAD (AIR DEFENSE SUPPRESSION)</option>
+                  <option value="AEW">AEW&C / AWACS ORBIT</option>
+                  <option value="AAR">AIR-TO-AIR REFUELLING</option>
+                </select>
+                <button class="btn-tactical btn-small btn-secondary" id="exportAtoBtn">
+                  <i class="fa-solid fa-file-arrow-down"></i> EXPORT ATO MANIFEST
+                </button>
+              </div>
+            </div>
+
+            <!-- ATO TABLE -->
+            <div class="table-container">
+              <table class="tactical-table" id="atoSortieTable">
+                <thead>
+                  <tr>
+                    <th>SORTIE ID</th>
+                    <th>MISSION TYPE</th>
+                    <th>CALLSIGN</th>
+                    <th>AIRCRAFT</th>
+                    <th>ORIGIN BASE</th>
+                    <th>TARGET / SECTOR</th>
+                    <th>TOT (TIME ON TARGET)</th>
+                    <th>MISSION PHASE</th>
+                    <th>FUEL STATE</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="atoTableBody">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 6: "WHAT-IF" CONTINGENCY SANDBOX          -->
+      <!-- ============================================== -->
+      <section class="view-panel" id="simView">
+        <div class="sim-layout">
+
+          <!-- SIMULATION CONTROLS -->
+          <div class="card-panel sim-controls-panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title"><i class="fa-solid fa-gamepad"></i> TACTICAL "WHAT-IF" STRESS-TESTING SANDBOX</div>
+                <div class="panel-sub">Simulate critical disruptions to validate AI dynamic resource re-allocation & resilience</div>
+              </div>
+              <button class="btn-tactical btn-alert" id="executeSimBtn">
+                <i class="fa-solid fa-play"></i> RUN MONTE-CARLO SIMULATION
+              </button>
+            </div>
+
+            <div class="sim-scenarios-grid">
+              <!-- Scenario 1: Airbase / Runway Cratered -->
+              <div class="scenario-card">
+                <div class="scenario-head">
+                  <i class="fa-solid fa-volcano"></i>
+                  <span>RUNWAY CRATERED AT AMBALA AFS</span>
+                </div>
+                <p>Simulate loss of primary runway 09/27. Diverts airborne strike fighters to Adampur and Chandigarh bases.</p>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="simRunwayToggle">
+                  <span class="slider"></span>
+                  <span class="toggle-text" id="simRunwayLabel">INACTIVE</span>
+                </label>
+              </div>
+
+              <!-- Scenario 2: S-400 / HQ-9 SAM Radar Spike -->
+              <div class="scenario-card">
+                <div class="scenario-head">
+                  <i class="fa-solid fa-radiation"></i>
+                  <span>SAM RADAR MULTI-TARGET SPIKE</span>
+                </div>
+                <p>Hostile long-range SAM transitions from search to active track/illumination mode over ingress corridor.</p>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="simSamToggle" checked>
+                  <span class="slider"></span>
+                  <span class="toggle-text" id="simSamLabel">ACTIVE</span>
+                </label>
+              </div>
+
+              <!-- Scenario 3: Monsoonal / Western Disturbance Weather Squall -->
+              <div class="scenario-card">
+                <div class="scenario-head">
+                  <i class="fa-solid fa-cloud-bolt"></i>
+                  <span>SEVERE SQUALL LINE / STORM CELL</span>
+                </div>
+                <p>Severe convective turbulence and icing from FL180 to FL420 blocking primary mountain pass corridor.</p>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="simWeatherToggle">
+                  <span class="slider"></span>
+                  <span class="toggle-text" id="simWeatherLabel">INACTIVE</span>
+                </label>
+              </div>
+
+              <!-- Scenario 4: Tanker Failure / AAR Hose Malfunction -->
+              <div class="scenario-card">
+                <div class="scenario-head">
+                  <i class="fa-solid fa-gas-pump"></i>
+                  <span>TANKER (IL-78) HOSE MALFUNCTION</span>
+                </div>
+                <p>Drogue pod failure forces immediate emergency fuel re-calculation for deep penetration CAP.</p>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="simTankerToggle">
+                  <span class="slider"></span>
+                  <span class="toggle-text" id="simTankerLabel">INACTIVE</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- SIMULATION RESULTS PREDICTOR -->
+          <div class="card-panel sim-results-panel">
+            <div class="panel-header">
+              <div class="panel-title"><i class="fa-solid fa-chart-pie"></i> PREDICTIVE RESILIENCE & MISSION SUCCESS IMPACT</div>
+              <span class="badge-status status-ok" id="simStatusPill">BASELINE SCENARIO EVALUATED</span>
+            </div>
+
+            <div class="sim-metrics-grid">
+              <div class="sim-metric-card">
+                <span class="s-label">OVERALL MISSION SUCCESS %</span>
+                <span class="s-value highlight-cyan" id="simSuccessRate">94.8%</span>
+                <span class="s-desc">AI-compensated path preserves TOT</span>
+              </div>
+              <div class="sim-metric-card">
+                <span class="s-label">EXPECTED ATTRITION RISK</span>
+                <span class="s-value secure-green" id="simAttritionRisk">1.8% (LOW)</span>
+                <span class="s-desc">SAM evasion envelope maintained</span>
+              </div>
+              <div class="sim-metric-card">
+                <span class="s-label">FLEET TURNAROUND OVERHEAD</span>
+                <span class="s-value text-warning" id="simTatImpact">+6.5 MINS</span>
+                <span class="s-desc">Divert airbase refueling delay</span>
+              </div>
+              <div class="sim-metric-card">
+                <span class="s-label">WEAPONS DISCHARGE ACCURACY (Pk)</span>
+                <span class="s-value highlight-cyan" id="simPkScore">92.4%</span>
+                <span class="s-desc">Standoff PGM envelopes intact</span>
+              </div>
+            </div>
+
+            <!-- DETAILED AI CONTINGENCY MITIGATION PLAN -->
+            <div class="sim-mitigation-box" id="simMitigationBox">
+              <div class="mitigation-title"><i class="fa-solid fa-shield-cat"></i> AI RECOMMENDED RE-OPTIMISATION DIRECTIVE:</div>
+              <p id="simMitigationText">
+                Standard baseline route is optimal. Ingress altitude FL320 maintains radar horizon standoff. Standby Il-78 tanker orbit Varuna-01 on-station at FL260 provides 65-minute fuel buffer for all CAP elements.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER STATUS STRIP -->
+    <footer class="tactical-footer">
+      <div class="footer-left">
+        <span class="footer-tag"><i class="fa-solid fa-circle text-success"></i> ENGINE: MILP OPTIMIZER ONLINE</span>
+        <span class="footer-tag"><i class="fa-solid fa-database"></i> POSTGIS SPATIAL LAYER: 0.08ms</span>
+        <span class="footer-tag"><i class="fa-solid fa-bolt text-warning"></i> GPU INFERENCE: 14.2 TFLOPS</span>
+      </div>
+      <div class="footer-center">
+        <span>ASTRA-C2 • JOINT AIR WARFARE SIMULATION & TACTICAL RESOURCE MANAGEMENT CONSOLE</span>
+      </div>
+      <div class="footer-right">
+        <span class="footer-tag">IACCS NODE #09 • SECURITY CLEARANCE: LEVEL-V</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- CONTINGENCY ALERT MODAL POPUP -->
+  <div class="modal-backdrop hidden" id="contingencyModal">
+    <div class="tactical-modal">
+      <div class="modal-header">
+        <div class="modal-alert-title">
+          <i class="fa-solid fa-triangle-exclamation fa-beat text-danger"></i>
+          <span>EMERGENT CONTINGENCY INCIDENT DETECTED</span>
+        </div>
+        <button class="modal-close-btn" id="modalCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-banner-danger">
+          <span class="modal-subhead">SITUATION REPORT // URGENT ACTION DIRECTIVE</span>
+          <h2 id="modalIncidentTitle">HIGH-VALUE TARGET (HVT-ALPHA) POP-UP IN SECTOR 4</h2>
+          <p id="modalIncidentDesc">
+            Forward ELINT & satellite pass detected enemy mobile command vehicle and S-300 radar mast deploying at Grid NV-9104. Threat window closes in 05:00 minutes.
+          </p>
+        </div>
+        <div class="modal-solution-preview">
+          <div class="preview-metric">
+            <span class="p-lbl">RECOMMENDED ASSET</span>
+            <span class="p-val highlight-cyan" id="modalRecAsset">TIGER-01 (RAFALE F3-R)</span>
+          </div>
+          <div class="preview-metric">
+            <span class="p-lbl">ETA TO INTERCEPT</span>
+            <span class="p-val text-warning" id="modalRecEta">3.8 MINUTES</span>
+          </div>
+          <div class="preview-metric">
+            <span class="p-lbl">WEAPON-TARGET PAIRING</span>
+            <span class="p-val highlight-cyan" id="modalRecWeapon">SCALP-EG / HAMMER PGM (Pk: 94.2%)</span>
+          </div>
+          <div class="preview-metric">
+            <span class="p-lbl">SURVIVAL CHANCE</span>
+            <span class="p-val secure-green" id="modalRecSurvival">98.1% (NOE TERRAIN MASKED)</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-tactical btn-secondary" id="modalDismissBtn">DISMISS ALERT</button>
+        <button class="btn-tactical btn-primary" id="modalReviewBtn">
+          <i class="fa-solid fa-arrows-split-up-and-left"></i> REVIEW AI RETASK MATRIX
+        </button>
+        <button class="btn-tactical btn-alert" id="modalInstantAuthBtn">
+          <i class="fa-solid fa-bolt"></i> INSTANT AUTHORIZE RETASK
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- App Scripts -->
+  <script src="optimizer.js"></script>
+  <script src="simulation.js"></script>
+  <script src="map.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
